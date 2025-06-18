@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Medical Chatbot</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #chatbox {
+            border: 1px solid #aaa;
+            width: 100%;
+            max-width: 500px;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        #userInput {
+            width: 75%;
+            padding: 10px;
+        }
+        #sendBtn {
+            padding: 10px;
+        }
+        .userMsg {
+            color: blue;
+            margin: 5px 0;
+        }
+        .botMsg {
+            color: green;
+            margin: 5px 0;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <h2>Medical Chatbot</h2>
+    <div id="chatbox"></div>
+    <input type="text" id="userInput" placeholder="Ask about your symptoms or disease..." />
+    <button id="sendBtn">Send</button>
+
+    <script>
+        const chatbox = document.getElementById('chatbox');
+        const input = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function appendMessage(sender, message) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'user' ? 'userMsg' : 'botMsg';
+            msgDiv.textContent = message;
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        function cleanInput(text) {
+            return text.toLowerCase().replace(/[^\w\s]/gi, '').trim();
+        }
+
+        const medicalData = {
+            "common cold": { treatment: "Rest, stay hydrated, and take over-the-counter cold remedies. If symptoms worsen, see a doctor.", medicines: "Paracetamol, Ibuprofen, Decongestants." },
+            "flu": { treatment: "Rest, plenty of fluids, and antiviral medications if prescribed.", medicines: "Oseltamivir, Paracetamol, Ibuprofen." },
+            "headache": { treatment: "Rest, reduce stress, and hydration.", medicines: "Paracetamol, Ibuprofen." },
+            "stomach ache": { treatment: "Avoid solid food for a while, drink plenty of fluids, and try antacids if caused by acidity.", medicines: "Antacids, Simethicone." },
+            "diabetes": { treatment: "Manage diet, exercise regularly, monitor blood sugar levels, and take prescribed medication.", medicines: "Insulin, Metformin, Sulfonylureas." },
+            "hypertension": { treatment: "Reduce salt intake, exercise, maintain healthy weight, and take medication as prescribed.", medicines: "ACE inhibitors, Beta-blockers, Diuretics." },
+            "asthma": { treatment: "Avoid triggers, use inhalers as prescribed, and have an asthma action plan.", medicines: "Bronchodilators (Albuterol), Steroid inhalers." },
+            "allergy": { treatment: "Avoid allergens, take antihistamines, and use nasal sprays if needed.", medicines: "Antihistamines, Decongestants." },
+            "back pain": { treatment: "Rest, apply heat/cold, gentle stretching, and consult a doctor if pain persists.", medicines: "NSAIDs like Ibuprofen, Muscle relaxants." },
+            "diarrhea": { treatment: "Stay hydrated, eat bland foods, and replace lost electrolytes.", medicines: "Oral rehydration salts, Loperamide (under doctor advice)." },
+            "anemia": { treatment: "Increase iron-rich foods, vitamin supplements, and treat underlying cause.", medicines: "Iron supplements, Vitamin B12." },
+            "bronchitis": { treatment: "Rest, fluids, avoid smoking, and medications for cough and inflammation.", medicines: "Cough suppressants, Bronchodilators, Antibiotics (if bacterial)." },
+            "eczema": { treatment: "Keep skin moisturized, avoid irritants, and use medicated creams.", medicines: "Topical corticosteroids, Emollients." },
+            "migraine": { treatment: "Rest in a dark room, avoid triggers, and take prescribed medications.", medicines: "Triptans, NSAIDs, Anti-nausea medications." },
+            "sinusitis": { treatment: "Use saline nasal spray, steam inhalation, and consult doctor if persists.", medicines: "Decongestants, Antibiotics (if bacterial)." },
+            "urinary tract infection": { treatment: "Drink plenty of water and take prescribed antibiotics.", medicines: "Antibiotics like Nitrofurantoin, Trimethoprim." },
+            "hypothyroidism": { treatment: "Daily thyroid hormone replacement and regular monitoring.", medicines: "Levothyroxine." },
+            "hyperthyroidism": { treatment: "Medications to reduce hormone production or surgery in some cases.", medicines: "Methimazole, Propylthiouracil." },
+            "psoriasis": { treatment: "Keep skin moisturized and use prescribed topical or systemic treatments.", medicines: "Topical corticosteroids, Vitamin D analogues." },
+            "depression": { treatment: "Counseling, lifestyle changes, and medications.", medicines: "SSRIs like Fluoxetine, Sertraline." },
+            "anxiety": { treatment: "Therapy, stress management, and medications if needed.", medicines: "Benzodiazepines, SSRIs." },
+            "constipation": { treatment: "Increase fiber intake, fluids, and exercise.", medicines: "Laxatives like Psyllium, Senna." },
+            "gastroenteritis": { treatment: "Stay hydrated, rest, and avoid solid foods until nausea subsides.", medicines: "Oral rehydration salts, Antiemetics." },
+            "kidney stones": { treatment: "Drink plenty of water and pain relief; sometimes medical intervention is needed.", medicines: "NSAIDs, Alpha blockers." },
+            "arthritis": { treatment: "Exercise, weight management, and medications for pain and inflammation.", medicines: "NSAIDs, Corticosteroids, DMARDs." },
+            "chickenpox": { treatment: "Rest, maintain hygiene, and use medications to relieve itching.", medicines: "Calamine lotion, Antihistamines." },
+            "shingles": { treatment: "Pain control and antiviral medications early in the outbreak.", medicines: "Acyclovir, Pain relievers." },
+            "gingivitis": { treatment: "Good oral hygiene and dental cleanings.", medicines: "Antibacterial mouthwashes." },
+            "influenza": { treatment: "Rest, fluids, fever reducers, and antiviral drugs if early.", medicines: "Oseltamivir, Paracetamol." },
+            "appendicitis": { treatment: "Surgical removal of the appendix.", medicines: "Pain relief and antibiotics pre-op." },
+            "lung cancer": { treatment: "Depends on stage: surgery, chemotherapy, or radiotherapy.", medicines: "Chemotherapy agents as prescribed." },
+            "heart attack": { treatment: "Emergency treatment required, hospitalization, and long-term medication.", medicines: "Aspirin, Beta-blockers, Thrombolytics." },
+            "stroke": { treatment: "Emergency care, clot dissolving drugs, and rehabilitation.", medicines: "tPA, Antiplatelets." },
+            "malaria": { treatment: "Antimalarial medications and supportive care.", medicines: "Artemisinin-based combination therapies." },
+            "typhoid": { treatment: "Antibiotic therapy and hydration.", medicines: "Ciprofloxacin, Azithromycin." },
+            "tuberculosis": { treatment: "Long-term antibiotic treatment.", medicines: "Isoniazid, Rifampicin." },
+            "obesity": { treatment: "Diet modification, exercise, and sometimes medication or surgery.", medicines: "Orlistat, Liraglutide." },
+            "vitamin d deficiency": { treatment: "Vitamin D supplements and sunlight exposure.", medicines: "Cholecalciferol supplements." },
+            "iron deficiency": { treatment: "Iron supplements and diet rich in iron.", medicines: "Ferrous sulfate." },
+            "gout": { treatment: "Dietary changes, anti-inflammatory medications.", medicines: "Allopurinol, NSAIDs." },
+            "pneumonia": { treatment: "Antibiotics and supportive care.", medicines: "Amoxicillin, Macrolides." }
+        };
+
+        sendBtn.addEventListener('click', () => {
+            const rawQuery = input.value;
+            const query = cleanInput(rawQuery);
+            if (!query) return;
+
+            appendMessage('user', rawQuery);
+            input.value = '';
+
+            let response = "Sorry, I couldn't find information about that. Please consult a healthcare professional.";
+
+            for (const disease in medicalData) {
+                if (query.includes(disease)) {
+                    const info = medicalData[disease];
+                    response = `Treatment: ${info.treatment}\nMedicines: ${info.medicines}`;
+                    break;
+                }
+            }
+
+            appendMessage('bot', response);
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+    </script>
+</body>
+</html>
